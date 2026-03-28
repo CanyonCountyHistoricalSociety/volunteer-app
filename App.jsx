@@ -391,6 +391,10 @@ export default function VolunteerSignupApp() {
   const [signupAccessCode, setSignupAccessCode] = useState("");
   const [authError, setAuthError] = useState("");
   const [authMessage, setAuthMessage] = useState("");
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+const [newPassword, setNewPassword] = useState("");
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+const [newPassword, setNewPassword] = useState("");
   const [slots, setSlots] = useState(buildInitialSlots());
   const [isLoading, setIsLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState("Connecting to shared volunteer schedule...");
@@ -404,19 +408,33 @@ export default function VolunteerSignupApp() {
   const [expandedDates, setExpandedDates] = useState({});
   const claimCardRef = useRef(null);
 
-  useEffect(() => {
-    const bootAuth = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session || null);
-      setIsAuthReady(true);
-    };
-    bootAuth();
-    const listener = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession || null);
-      setIsAuthReady(true);
-    });
-    return () => listener.data.subscription.unsubscribe();
-  }, []);
+useEffect(() => {
+  const bootAuth = async () => {
+    const hash = window.location.hash || "";
+    if (hash.includes("type=recovery")) {
+      setIsRecoveryMode(true);
+    }
+
+    const { data } = await supabase.auth.getSession();
+    setSession(data.session || null);
+    setIsAuthReady(true);
+  };
+
+  bootAuth();
+
+  const listener = supabase.auth.onAuthStateChange((event, nextSession) => {
+    if (event === "PASSWORD_RECOVERY") {
+      setIsRecoveryMode(true);
+    }
+    setSession(nextSession || null);
+    setIsAuthReady(true);
+  });
+
+  return () => listener.data.subscription.unsubscribe();
+}, []);
+
+  return () => listener.data.subscription.unsubscribe();
+}, []);
 
   const reloadSharedSlots = async () => {
     const { data, error } = await fetchSlotsFromDb();
@@ -523,8 +541,54 @@ export default function VolunteerSignupApp() {
     setSignupPassword("");
     setSignupAccessCode("");
   };
+const handlePasswordUpdate = async (e) => {
+  e.preventDefault();
+  setAuthError("");
+  setAuthMessage("");
 
+  if (!newPassword) {
+    setAuthError("Enter a new password.");
+    return;
+  }
+
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (error) {
+    setAuthError(error.message);
+    return;
+  }
+
+  setAuthMessage("Password updated. You can sign in now.");
+  setIsRecoveryMode(false);
+  setNewPassword("");
+  await supabase.auth.signOut();
+};
   const handleSignIn = async (e) => {
+      e.preventDefault();
+  setAuthError("");
+  setAuthMessage("");
+
+  if (!newPassword) {
+    setAuthError("Enter a new password.");
+    return;
+  }
+
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (error) {
+    setAuthError(error.message);
+    return;
+  }
+
+  setAuthMessage("Password updated. You can sign in now.");
+  setIsRecoveryMode(false);
+  setNewPassword("");
+  await supabase.auth.signOut();
+};
     e.preventDefault();
     setAuthError("");
     setAuthMessage("");
