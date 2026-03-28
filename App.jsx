@@ -675,6 +675,28 @@ export default function VolunteerSignupApp() {
                 <form onSubmit={handleSignIn} style={{ display: "grid", gap: 12, marginTop: 20 }}>
                   <input style={ui.input} required type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} placeholder="Email address" />
                   <input style={ui.input} required type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} placeholder="Password" />
+                  <button
+  type="button"
+  style={{ ...ui.buttonOutline, marginTop: -4 }}
+  onClick={async () => {
+    setAuthError("");
+    setAuthMessage("");
+    if (!loginEmail) {
+      setAuthError("Enter your email address first.");
+      return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
+      redirectTo: window.location.origin,
+    });
+    if (error) {
+      setAuthError(error.message);
+    } else {
+      setAuthMessage("Password reset email sent.");
+    }
+  }}
+>
+  Forgot password?
+</button>
                   <button type="submit" style={ui.button}>Sign in</button>
                 </form>
               ) : (
